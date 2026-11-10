@@ -8,7 +8,7 @@ Estructura de la carpeta `batman-portfolio/`:
 - `css/styles.css` — colores, animaciones y diseño.
 - `js/datos.js` — textos de ejemplo del sitio.
 - `js/main.js` — comportamiento del sitio.
-- `admin/index.html` — el panel privado (contraseña de prueba: batman-demo).
+- `admin/panel.html` — el panel privado (se abre con el botón "Acceso" al pie de la página) (contraseña de prueba: batman-demo).
 - `netlify.toml` — configuración de Netlify. No la borres.
 - `assets/img/` — imágenes del sitio (opcional; las fotos principales se suben desde el panel).
 - `assets/sounds/` — sonidos (opcional; el audio se sube desde el panel).

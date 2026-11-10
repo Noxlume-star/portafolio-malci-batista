@@ -433,6 +433,25 @@
   }
   window.bpRecargarContenido = recargarTodo;
 
+  /* Botón "Acceso": abre el panel privado */
+  (function iniciarPanel() {
+    const btn = $("#btn-panel"), capa = $("#admin-capa"), frame = $("#admin-frame"), cerrar = $("#cerrar-admin");
+    if (!btn || !capa || !frame || !cerrar) return;
+    btn.addEventListener("click", () => {
+      frame.src = "admin/panel.html";
+      capa.hidden = false;
+      document.body.style.overflow = "hidden";
+      cerrar.focus();
+    });
+    cerrar.addEventListener("click", () => {
+      capa.hidden = true;
+      frame.src = "about:blank";
+      document.body.style.overflow = "";
+      btn.focus();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !capa.hidden) cerrar.click(); });
+  })();
+
   /* 9. Revelación del retrato: GSAP y Lenis (si cargan); si no, la página funciona igual */
   function iniciarRevelacion() {
     const retrato = $("#retrato");
