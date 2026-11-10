@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel privado — Batman Portfolio (DEMO)</title>
+  <style>
+    :root { --negro:#0a0a0c; --carbon:#1a1a1f; --acero:#4a4f5a; --plata:#c0c6d1; --blanco:#f2f4f7; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--negro); color:var(--blanco); font-family: system-ui, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
+    [hidden] { display:none !important; }
+    .pantalla { min-height:100vh; display:grid; place-items:center; padding:1.5rem; }
+    .login { width:min(360px,100%); border:1px solid var(--acero); padding:2rem; background:var(--carbon); }
+    .login h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:.12em; font-size:1.3rem; margin:0 0 .3rem; }
+    .aviso { font-size:.6rem; color:#6b6f7a; margin:.8rem 0 0; opacity:.45; letter-spacing:.05em; }
+    .pista { font-size:.85rem; color:var(--plata); min-height:1.3em; margin-top:.9rem; }
+    label { display:block; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--plata); margin:.9rem 0 .3rem; }
+    input, select, textarea { width:100%; padding:.6rem; background:var(--negro); color:var(--blanco); border:1px solid var(--acero); font:inherit; min-height:44px; }
+    input[type=file] { padding:.4rem; font-size:.8rem; }
+    .recorte { position:fixed; inset:0; background:rgba(0,0,0,.88); display:grid; place-items:start center; z-index:200; padding:1rem; overflow-y:auto; }
+    .recorte__caja { margin:auto 0; }
+    .recorte__caja { background:var(--carbon); border:1px solid var(--acero); padding:1rem; display:grid; gap:.6rem; width:min(460px,100%); }
+    .recorte select { min-height:44px; }
+    input[type=checkbox] { width:auto; min-height:auto; }
+    textarea { min-height:80px; }
+    button { min-height:44px; padding:.6rem 1rem; background:transparent; color:var(--plata); border:1px solid var(--acero); font:inherit; letter-spacing:.1em; text-transform:uppercase; font-size:.72rem; cursor:pointer; }
+    button:hover, button:focus-visible, button.activo { background:var(--plata); color:var(--negro); border-color:var(--plata); outline:none; }
+    .msg { font-size:.8rem; color:var(--plata); min-height:1.2em; margin-top:.8rem; }
+    .panel { max-width:980px; margin:0 auto; padding:1.2rem; }
+    .cabecera { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--acero); padding-bottom:1rem; }
+    .tabs { display:flex; flex-wrap:wrap; gap:.5rem; margin:1.2rem 0; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+    @media (max-width:640px){ .grid2 { grid-template-columns:1fr; } }
+    .bloque-img { display:flex; gap:1rem; align-items:center; margin-top:.5rem; flex-wrap:wrap; }
+    .prev { width:110px; height:130px; object-fit:cover; border:1px solid var(--acero); background:var(--carbon); }
+    .prev-peq { width:90px; height:56px; object-fit:cover; border:1px solid var(--acero); background:var(--carbon); }
+    .fila { border:1px solid var(--acero); padding:.8rem; margin-bottom:.8rem; display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .fila .ancho { grid-column:1 / -1; }
+    .fila .acciones { grid-column:1 / -1; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+    .pequeno { font-size:.75rem; color:var(--acero); }
+    @media (max-width:640px){ .fila { grid-template-columns:1fr; } }
+    .pie-panel { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; justify-content:space-between; margin-top:1.5rem; border-top:1px solid var(--acero); padding-top:1rem; }
+  </style>
+</head>
+<body>
+
+  <section class="pantalla" id="login">
+    <form class="login" id="form-login" autocomplete="off">
+      <h1>ACCESO PRIVADO</h1>
+      <p class="aviso">DEMO: la verificación ocurre en el navegador y no es seguridad real. La versión final usará Supabase Auth.</p>
+      <label for="correo">Correo</label><input id="correo" type="email" autocomplete="username" required>
+      <p class="pista" id="pista" aria-live="polite"></p>
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" required>
+      <button type="submit" style="margin-top:1rem;width:100%">Entrar</button>
+      <p class="msg" id="msg-login" role="status"></p>
+    </form>
+  </section>
+
+  <section class="panel" id="panel" hidden>
+    <header class="cabecera">
+      <h1 style="font-family:Georgia,serif;font-weight:400;letter-spacing:.12em;margin:0;font-size:1.2rem">PANEL PRIVADO · DEMO</h1>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button type="button" id="salir">Bloquear</button>
+        <button type="button" id="cerrar">Cerrar panel</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" data-tab="sobre">Sobre mí</button>
+      <button type="button" data-tab="proyectos">Proyectos</button>
+      <button type="button" data-tab="habilidades">Habilidades</button>
+      <button type="button" data-tab="contacto">Contacto</button>
+      <button type="button" data-tab="servicios">Servicios</button>
+      <button type="button" data-tab="certificados">Certificados</button>
+      <button type="button" data-tab="presupuesto">Presupuesto y extras</button>
+      <button type="button" data-tab="capitulo">Capítulo I</button>
+      <button type="button" data-tab="final">Canal e invitación</button>
+      <button type="button" data-tab="identidad">Carnet</button>
+    </nav>
+
+    <div id="tab-identidad">
+      <div class="grid2">
+        <div><label for="i-nombre">Nombre</label><input id="i-nombre"></div>
+        <div><label for="i-condicion">Profesión</label><input id="i-condicion"></div>
+        <div><label for="i-esp">Especialidad</label><input id="i-esp"></div>
+        <div><label for="i-num">Número de carnet</label><input id="i-num"></div>
+      </div>
+      <div class="grid2">
+        <div><label for="i-ciudad">Ciudad</label><input id="i-ciudad"></div>
+        <div><label for="i-edad">Edad</label><input id="i-edad"></div>
+        <div><label for="i-est">¿Eres estudiante?</label><select id="i-est"><option value="no">No</option><option value="si">Sí</option></select></div>
+        <div><label for="i-inst">Institución o carrera (si eres estudiante)</label><input id="i-inst"></div>
+      </div>
+      <label for="i-desc">Descripción (carnet)</label><textarea id="i-desc"></textarea>
+      <label for="i-datos">Datos adicionales del carnet (una línea por dato)</label><textarea id="i-datos"></textarea>
+      <label for="i-foto">Foto del carnet (aparece en el carnet de la portada)</label>
+      <div class="bloque-img"><img class="prev" id="i-foto-prev" alt=""><input type="file" id="i-foto" accept="image/*"></div>
+      <label for="aud">Audio del portafolio: audio o video de máximo 1 minuto y 30 MB (se usa solo su sonido)</label>
+      <div class="bloque-img"><audio id="aud-prev" controls style="max-width:100%"></audio><input type="file" id="aud" accept="audio/*,video/*"><button type="button" id="aud-quitar">Quitar audio</button></div>
+    </div>
+
+    <div id="tab-sobre" hidden>
+      <label for="s-perfil">Perfil profesional</label><textarea id="s-perfil"></textarea>
+      <label for="s-form">Formación académica</label><textarea id="s-form"></textarea>
+      <label for="s-desc">Descripción personal</label><textarea id="s-desc"></textarea>
+      <label for="s-obj">Objetivos profesionales</label><textarea id="s-obj"></textarea>
+    </div>
+
+    <div id="tab-proyectos" hidden>
+      <div id="lista-proyectos"></div>
+      <button type="button" id="nuevo-proyecto">+ Nuevo proyecto</button>
+    </div>
+
+    <div id="tab-habilidades" hidden>
+      <div id="lista-hab"></div>
+      <div class="grid2" style="margin-top:1rem">
+        <div><label for="h-nombre">Nombre</label><input id="h-nombre"></div>
+        <div><label for="h-cat">Categoría</label>
+          <select id="h-cat">
+            <option>Frontend</option><option>Backend</option><option>Bases de datos</option>
+            <option>Herramientas</option><option>Otros conocimientos</option>
+          </select>
+        </div>
+        <div><label for="h-nivel">Nivel (0 a 100, opcional)</label><input id="h-nivel" type="number" min="0" max="100"></div>
+        <div><label for="h-desc">Descripción</label><input id="h-desc"></div>
+      </div>
+      <button type="button" id="agregar-hab" style="margin-top:1rem">+ Agregar habilidad</button>
+    </div>
+
+    <div id="tab-contacto" hidden>
+      <div class="grid2">
+        <div><label for="c-correo">Correo</label><input id="c-correo"></div>
+        <div><label for="c-github">GitHub (enlace)</label><input id="c-github"></div>
+        <div><label for="c-linkedin">LinkedIn (enlace)</label><input id="c-linkedin"></div>
+        <div><label for="c-instagram">Instagram (enlace)</label><input id="c-instagram"></div>
+      </div>
+    </div>
+
+    <div id="tab-servicios" hidden>
+      <p class="pequeno">Agrega todos los servicios que quieras. Aparecen en la sección Servicios.</p>
+      <div id="lista-serv" style="margin-top:.8rem"></div>
+      <button type="button" id="nuevo-serv">+ Nuevo servicio</button>
+    </div>
+
+    <div id="tab-certificados" hidden>
+      <p class="pequeno">Cada certificado puede tener imagen, emisor, fecha y enlace para verificarlo.</p>
+      <div id="lista-cert" style="margin-top:.8rem"></div>
+      <button type="button" id="nuevo-cert">+ Nuevo certificado</button>
+    </div>
+
+    <div id="tab-presupuesto" hidden>
+      <div class="grid2">
+        <div><label for="x-opciones">Opciones de presupuesto (una por línea)</label><textarea id="x-opciones"></textarea></div>
+        <div><label for="x-plazos">Plazos (una por línea)</label><textarea id="x-plazos"></textarea></div>
+        <div><label for="x-wa">WhatsApp (con código de país, solo números, ej. 18095551234)</label><input id="x-wa"></div>
+        <div><label for="x-ig">Instagram (enlace completo)</label><input id="x-ig"></div>
+        <div><label>Disponibilidad</label><select id="x-disp"><option value="si">Disponible</option><option value="no">No disponible</option></select></div>
+        <div><label for="x-cli">Clientes satisfechos (número)</label><input id="x-cli" type="number" min="0"></div>
+        <div><label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="x-cli-vis" style="width:auto;min-height:auto"> Mostrar contador de clientes</label></div>
+      </div>
+    </div>
+
+    <div id="tab-capitulo" hidden>
+      <div class="grid2">
+        <div><label for="k-num">Número del capítulo</label><input id="k-num"></div>
+        <div><label for="k-l1">Línea 1 (grande)</label><input id="k-l1"></div>
+        <div><label for="k-l2">Línea 2 (grande)</label><input id="k-l2"></div>
+      </div>
+      <label for="k-texto">Texto</label><textarea id="k-texto"></textarea>
+      <label for="k-fb">Foto base (siempre visible)</label>
+      <div class="bloque-img"><img class="prev" id="k-fb-prev" alt=""><input type="file" id="k-fb" accept="image/*"></div>
+      <label for="k-fv">Foto de revelación (aparece al pasar el cursor; misma persona y encuadre que la base)</label>
+      <div class="bloque-img"><img class="prev" id="k-fv-prev" alt=""><input type="file" id="k-fv" accept="image/*"></div>
+    </div>
+
+    <div id="tab-final" hidden>
+      <label for="f-pie">Texto del pie de página</label><input id="f-pie">
+      <div class="grid2" style="margin-top:.8rem">
+        <div><label for="f-ct">Título del canal seguro</label><input id="f-ct"></div>
+        <div><label for="f-ctx">Texto del canal seguro</label><input id="f-ctx"></div>
+      </div>
+      <p class="pequeno" style="margin-top:.8rem">Enlaces que se muestran en Canal seguro:</p>
+      <div class="bloque-img" style="gap:1.2rem">
+        <label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="f-c-correo" style="width:auto;min-height:auto"> Correo</label>
+        <label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="f-c-whatsapp" style="width:auto;min-height:auto"> WhatsApp</label>
+        <label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="f-c-github" style="width:auto;min-height:auto"> GitHub</label>
+        <label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="f-c-linkedin" style="width:auto;min-height:auto"> LinkedIn</label>
+        <label style="text-transform:none;letter-spacing:0"><input type="checkbox" id="f-c-instagram" style="width:auto;min-height:auto"> Instagram</label>
+      </div>
+      <label style="text-transform:none;letter-spacing:0;margin-top:1rem"><input type="checkbox" id="f-ia" style="width:auto;min-height:auto"> Mostrar invitación al final</label>
+      <label for="f-it">Invitación: título</label><input id="f-it">
+      <label for="f-itx">Invitación: texto</label><textarea id="f-itx"></textarea>
+      <div class="grid2">
+        <div><label for="f-ib">Texto del botón</label><input id="f-ib"></div>
+        <div><label for="f-ie">Enlace del botón (WhatsApp o correo)</label><input id="f-ie"></div>
+      </div>
+    </div>
+
+    <div class="pie-panel">
+      <p class="pequeno">Los cambios se guardan en este navegador (demo).</p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <button type="button" id="restaurar">Restaurar original</button>
+        <button type="button" id="guardar">Guardar cambios</button>
+      </div>
+    </div>
+    <p class="msg" id="msg-panel" role="status"></p>
+  </section>
+
+  <div id="recorte" class="recorte" hidden>
+    <div class="recorte__caja">
+      <p class="pequeno">Recorta la foto antes de usarla</p>
+      <select id="rc-forma"><option value="0.75">Retrato 3:4</option><option value="0.8">Vertical 4:5</option><option value="1" selected>Cuadrado 1:1</option><option value="1.333">Horizontal 4:3</option><option value="1.6">Panorámica 16:10</option></select>
+      <canvas id="rc-canvas" style="max-height:40vh;max-width:100%;width:auto;display:block;margin:0 auto;border:1px solid #4a4f5a"></canvas>
+      <label>Acercar<input type="range" id="rc-zoom" min="1" max="3" step="0.01" value="1"></label>
+      <label>Mover izquierda / derecha<input type="range" id="rc-x" min="-1" max="1" step="0.01" value="0"></label>
+      <label>Mover arriba / abajo<input type="range" id="rc-y" min="-1" max="1" step="0.01" value="0"></label>
+      <div class="bloque-img"><button type="button" id="rc-ok">Usar esta foto</button><button type="button" id="rc-no">Cancelar</button></div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/datos.js"></script>
+  <script>
+    const HASH = "91d720ea5b7b1bd66356386cb834d8e37c27203248128de5773a0d3234587e61";
+    const KEY = "bp-contenido";
+    const $ = (s) => document.querySelector(s);
+    let P = (window.parent && window.parent.PORTAFOLIO) || window.PORTAFOLIO || null;
+    if (P) { try { const g = localStorage.getItem("bp-contenido"); if (g) P = Object.assign({}, P, JSON.parse(g)); } catch (e) {} }
+    let D = P ? JSON.parse(JSON.stringify(P)) : null;
+    let intentos = 0, bloqueadoHasta = 0;
+
+    async function sha256(texto) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+    function avisar(t) { $("#msg-panel").textContent = t; }
+
+    /* Recorte de foto: el usuario elige la forma y mueve la imagen */
+    function abrirRecorte(img) {
+      return new Promise((res, rej) => {
+        const box = $("#recorte"), cv = $("#rc-canvas"), ctx = cv.getContext("2d");
+        const zoom = $("#rc-zoom"), mx = $("#rc-x"), my = $("#rc-y"), forma = $("#rc-forma");
+        zoom.value = 1; mx.value = 0; my.value = 0;
+        const dibujar = () => {
+          const a = Number(forma.value);
+          cv.width = 640; cv.height = Math.round(640 / a);
+          let bw = img.width, bh = img.height;
+          if (img.width / img.height > a) bw = img.height * a; else bh = img.width / a;
+          const z = Number(zoom.value);
+          const cw = bw / z, ch = bh / z;
+          const sx = (img.width - cw) / 2 * (1 + Number(mx.value));
+          const sy = (img.height - ch) / 2 * (1 + Number(my.value));
+          ctx.clearRect(0, 0, cv.width, cv.height);
+          ctx.drawImage(img, sx, sy, cw, ch, 0, 0, cv.width, cv.height);
+        };
+        [zoom, mx, my].forEach((c) => { c.oninput = dibujar; });
+        forma.onchange = dibujar;
+        $("#rc-ok").onclick = () => { box.hidden = true; res(cv.toDataURL("image/jpeg", 0.85)); };
+        $("#rc-no").onclick = () => { box.hidden = true; rej(new Error("cancelado")); };
+        box.hidden = false; dibujar();
+      });
+    }
+    function leerImagen(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => { const im = new Image(); im.onload = () => abrirRecorte(im).then(subirFoto).then(res, rej); im.onerror = rej; im.src = r.result; };
+        r.onerror = rej; r.readAsDataURL(file);
+      });
+    }
+
+    /* Conexión con Supabase y subida de archivos */
+    const SB = (window.supabase && window.BP_SUPABASE) ? window.supabase.createClient(BP_SUPABASE.url, BP_SUPABASE.key) : null;
+    async function subirArchivo(blob, nombre) {
+      const ruta = Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + nombre;
+      const { error } = await SB.storage.from(BP_SUPABASE.bucket).upload(ruta, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
+      if (error) throw error;
+      return SB.storage.from(BP_SUPABASE.bucket).getPublicUrl(ruta).data.publicUrl;
+    }
+    async function subirFoto(dataUrl) {
+      if (!SB) return dataUrl;
+      const blob = await (await fetch(dataUrl)).blob();
+      return subirArchivo(blob, "foto.jpg");
+    }
+    async function cargarDesdeNube() {
+      const base = JSON.parse(JSON.stringify(window.PORTAFOLIO || P || {}));
+      try {
+        const { data } = await SB.from(BP_SUPABASE.tabla).select("contenido").eq("id", BP_SUPABASE.fila).maybeSingle();
+        if (data && data.contenido && Object.keys(data.contenido).length) Object.assign(base, data.contenido);
+      } catch (e) {}
+      D = base;
+    }
+
+    /* Acceso */
+    $("#form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = $("#msg-login");
+      if (!D) { msg.textContent = "Abre este panel desde la página del portafolio."; return; }
+      if (!window.crypto || !crypto.subtle) { msg.textContent = "Abre la página desde un servidor local o desde el enlace publicado."; return; }
+      if (Date.now() < bloqueadoHasta) { msg.textContent = "Espera unos segundos antes de reintentar."; return; }
+      const h = await sha256($("#pass").value);
+      if (h === HASH) {
+        intentos = 0; $("#pass").value = ""; msg.textContent = "";
+        D.capitulo ||= { numero: "Capítulo I", linea1: "", linea2: "", texto: "", fotoBase: "", fotoVelo: "" }; D.pie ||= ""; D.canal ||= { titulo: "Canal seguro", texto: "", correo: true, whatsapp: true, github: true, linkedin: true, instagram: true }; D.invitacion ||= { activa: true, titulo: "", texto: "", boton: "", enlace: "#" };
+        D.servicios ||= []; D.certificados ||= []; D.presupuesto ||= { opciones: [], plazos: [] };
+        D.clientes ||= { valor: 0, visible: false }; D.contacto.whatsapp ||= ""; if (D.disponible === undefined) D.disponible = true;
+        $("#login").hidden = true; $("#panel").hidden = false; pintarTodo();
+      } else {
+        intentos++;
+        if (intentos >= 3) { intentos = 0; bloqueadoHasta = Date.now() + 15000; msg.textContent = "Demasiados intentos. Espera 15 segundos."; }
+        else msg.textContent = "jajaja";
+      }
+    });
+    $("#pass").addEventListener("focus", () => { $("#pista").textContent = "hola Bruce digita tu fecha de cumple para acceder"; });
+    $("#form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = $("#msg-login");
+      if (!SB) { msg.textContent = "No hay conexión con el servidor. Revisa tu internet."; return; }
+      if (Date.now() < bloqueadoHasta) { msg.textContent = "Espera unos segundos antes de reintentar."; return; }
+      const { error } = await SB.auth.signInWithPassword({ email: $("#correo").value.trim(), password: $("#pass").value });
+      if (error) {
+        intentos++;
+        if (intentos >= 3) { intentos = 0; bloqueadoHasta = Date.now() + 15000; msg.textContent = "Demasiados intentos. Espera 15 segundos."; }
+        else msg.textContent = "jajaja";
+        return;
+      }
+      $("#pass").value = ""; msg.textContent = "";
+      await cargarDesdeNube();
+      D.servicios ||= []; D.certificados ||= []; D.presupuesto ||= { opciones: [], plazos: [] };
+      D.clientes ||= { valor: 0, visible: false }; D.contacto.whatsapp ||= ""; if (D.disponible === undefined) D.disponible = true;
+      D.capitulo ||= { numero: "Capítulo I", linea1: "", linea2: "", texto: "", fotoBase: "", fotoVelo: "" };
+      D.pie ||= ""; D.canal ||= { titulo: "Canal seguro", texto: "", correo: true, whatsapp: true, github: true, linkedin: true, instagram: true };
+      D.invitacion ||= { activa: true, titulo: "", texto: "", boton: "", enlace: "#" };
+      $("#login").hidden = true; $("#panel").hidden = false; pintarTodo();
+    });
+    $("#salir").addEventListener("click", () => { $("#panel").hidden = true; $("#login").hidden = false; });
+    $("#cerrar").addEventListener("click", () => {
+      const b = window.parent && window.parent.document && window.parent.document.getElementById("cerrar-admin");
+      if (b) b.click(); else { $("#panel").hidden = true; $("#login").hidden = false; }
+    });
+    document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("activo", x === b));
+      ["identidad", "sobre", "proyectos", "habilidades", "contacto", "servicios", "certificados", "presupuesto", "capitulo", "final"].forEach((t) => { $("#tab-" + t).hidden = t !== b.dataset.tab; });
+    }));
+
+    /* Campos de texto: se actualizan en D al escribir */
+    function vincular(id, fn) { $(id).addEventListener("input", (e) => fn(e.target.value)); }
+    vincular("#i-nombre", (v) => D.identidad.nombre = v);
+    vincular("#i-condicion", (v) => D.identidad.condicion = v);
+    vincular("#i-esp", (v) => D.identidad.especialidad = v);
+    vincular("#i-num", (v) => D.identidad.numero = v);
+    vincular("#i-desc", (v) => D.identidad.descripcion = v);
+    vincular("#i-ciudad", (v) => D.identidad.ciudad = v);
+    vincular("#i-edad", (v) => D.identidad.edad = v);
+    vincular("#i-inst", (v) => D.identidad.institucion = v);
+    vincular("#i-datos", (v) => D.identidad.datos = v.split("\n").map((t) => t.trim()).filter(Boolean));
+    $("#i-est").addEventListener("change", (e) => D.identidad.estudiante = e.target.value === "si");
+    vincular("#s-perfil", (v) => D.sobreMi.perfil = v);
+    vincular("#s-form", (v) => D.sobreMi.formacion = v);
+    vincular("#s-desc", (v) => D.sobreMi.descripcion = v);
+    vincular("#s-obj", (v) => D.sobreMi.objetivos = v);
+    vincular("#c-correo", (v) => D.contacto.correo = v);
+    vincular("#c-github", (v) => D.contacto.github = v);
+    vincular("#c-linkedin", (v) => D.contacto.linkedin = v);
+    vincular("#c-instagram", (v) => D.contacto.instagram = v);
+
+    $("#aud").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 30 * 1024 * 1024) { avisar("El archivo pesa más de 30 MB. Usa uno más corto."); e.target.value = ""; return; }
+      let duracion = 0;
+      try {
+        const url = URL.createObjectURL(f);
+        const medio = document.createElement(f.type.startsWith("video") ? "video" : "audio");
+        medio.preload = "metadata"; medio.src = url;
+        await new Promise((res, rej) => { medio.onloadedmetadata = res; medio.onerror = rej; });
+        duracion = medio.duration; URL.revokeObjectURL(url);
+      } catch (err) { avisar("No se pudo leer el archivo. Prueba con MP3 o MP4."); e.target.value = ""; return; }
+      if (!isFinite(duracion) || duracion > 60) { avisar("El audio dura más de 1 minuto. Recórtalo a 60 segundos o menos."); e.target.value = ""; return; }
+      try {
+        avisar("Subiendo audio...");
+        const url = await subirArchivo(f, f.name.replace(/[^a-zA-Z0-9._-]/g, "_"));
+        D.audioUrl = url; $("#aud-prev").src = url;
+        avisar("Audio subido. Pulsa Guardar cambios.");
+      } catch (err) { avisar("No se pudo subir el audio: " + err.message); }
+    });
+    $("#aud-quitar").addEventListener("click", () => {
+      delete D.audioUrl; $("#aud-prev").removeAttribute("src");
+      avisar("Audio quitado. Pulsa Guardar cambios.");
+    });
+    /* Fotos de identidad y sobre mí */
+    $("#i-foto").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      D.identidad.foto = await leerImagen(f, 640); $("#i-foto-prev").src = D.identidad.foto; avisar("Foto de perfil lista. Pulsa Guardar cambios.");
+    });
+
+    /* Proyectos */
+    function entrada(tag, valor, fn, ph) {
+      const e = document.createElement(tag); e.value = valor || ""; e.placeholder = ph || "";
+      e.addEventListener("input", () => fn(e.value)); return e;
+    }
+    function pintarProyectos() {
+      const c = $("#lista-proyectos"); c.replaceChildren();
+      D.proyectos.forEach((p, i) => {
+        const f = document.createElement("div"); f.className = "fila";
+        const vis = document.createElement("label"); vis.style.cssText = "margin:0;display:flex;gap:.4rem;align-items:center;text-transform:none;letter-spacing:0";
+        const chk = document.createElement("input"); chk.type = "checkbox"; chk.checked = p.visible !== false;
+        chk.addEventListener("change", () => { p.visible = chk.checked; avisar("Visibilidad cambiada. Pulsa Guardar cambios."); });
+        vis.append(chk, document.createTextNode("Visible en el portafolio"));
+        const img = document.createElement("img"); img.className = "prev-peq"; img.src = p.portada || ""; img.alt = "";
+        const fp = document.createElement("input"); fp.type = "file"; fp.accept = "image/*";
+        fp.addEventListener("change", async () => { const x = fp.files[0]; if (!x) return; p.portada = await leerImagen(x, 640); img.src = p.portada; avisar("Portada lista. Pulsa Guardar cambios."); });
+        const fc = document.createElement("input"); fc.type = "file"; fc.accept = "image/*"; fc.multiple = true;
+        const conteo = document.createElement("span"); conteo.className = "pequeno"; conteo.textContent = (p.capturas || []).length + " capturas";
+        fc.addEventListener("change", async () => {
+          p.capturas = p.capturas || [];
+          const libres = 6 - p.capturas.length; for (const x of Array.from(fc.files).slice(0, Math.max(0, libres))) p.capturas.push(await leerImagen(x, 640));
+          conteo.textContent = p.capturas.length + " capturas"; avisar("Capturas agregadas. Pulsa Guardar cambios.");
+        });
+        const borrar = document.createElement("button"); borrar.type = "button"; borrar.textContent = "Eliminar proyecto";
+        borrar.addEventListener("click", () => { D.proyectos.splice(i, 1); pintarProyectos(); avisar("Proyecto eliminado. Pulsa Guardar cambios."); });
+        f.append(
+          entrada("input", p.nombre, (v) => p.nombre = v, "Nombre del proyecto"),
+          entrada("input", p.categoria, (v) => p.categoria = v, "Categoría"),
+          entrada("input", p.estado, (v) => p.estado = v, "Estado (Publicado, En progreso…)"),
+          vis,
+          (() => { const d = entrada("textarea", p.descripcion, (v) => p.descripcion = v, "Descripción corta"); d.className = "ancho"; return d; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho bloque-img"; w.append(img, fp); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho bloque-img"; w.append(document.createTextNode("Capturas: "), fc, conteo); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("input", p.url, (v) => p.url = v, "Enlace a la página publicada")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("input", p.github, (v) => p.github = v, "Enlace a GitHub")); return w; })(),
+          entrada("input", p.fecha, (v) => p.fecha = v, "Fecha de realización (ej. Marzo 2026)"),
+          (() => { const l = document.createElement("label"); l.style.cssText = "margin:0;display:flex;gap:.4rem;align-items:center;text-transform:none;letter-spacing:0"; const k = document.createElement("input"); k.type = "checkbox"; k.checked = !!p.ocultarCapturas; k.addEventListener("change", () => { p.ocultarCapturas = k.checked; }); l.append(k, document.createTextNode("Ocultar fotos de este proyecto")); return l; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", p.descripcionCompleta, (v) => p.descripcionCompleta = v, "Descripción completa (se muestra al abrir el proyecto)")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", p.problema, (v) => p.problema = v, "Problema que resuelve")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", p.utilidad, (v) => p.utilidad = v, "Para qué sirve")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("input", (p.tecnologias || []).join(", "), (v) => p.tecnologias = v.split(",").map((t) => t.trim()).filter(Boolean), "Tecnologías separadas por comas")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("input", (p.lenguajes || []).join(", "), (v) => p.lenguajes = v.split(",").map((t) => t.trim()).filter(Boolean), "Lenguajes separados por comas")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", (p.caracteristicas || []).join("\n"), (v) => p.caracteristicas = v.split("\n").map((t) => t.trim()).filter(Boolean), "Características, una por línea")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", p.estructura, (v) => p.estructura = v, "Estructura del proyecto")); return w; })(),
+          (() => { const w = document.createElement("div"); w.className = "acciones"; w.append(borrar); return w; })()
+        );
+        c.append(f);
+      });
+    }
+    $("#nuevo-proyecto").addEventListener("click", () => {
+      D.proyectos.push({ nombre: "Nuevo proyecto", portada: "", descripcion: "", categoria: "Proyecto", estado: "En progreso", visible: false,
+        descripcionCompleta: "", problema: "", utilidad: "", tecnologias: [], lenguajes: [], caracteristicas: [], estructura: "", capturas: [], url: "#", github: "#" });
+      pintarProyectos(); avisar("Proyecto nuevo creado. Completa sus datos y pulsa Guardar cambios.");
+    });
+
+    /* Habilidades */
+    function pintarHabilidades() {
+      const c = $("#lista-hab"); c.replaceChildren();
+      D.habilidades.forEach((h, i) => {
+        const f = document.createElement("div"); f.className = "fila";
+        const s = document.createElement("span"); s.textContent = h.nombre + " — " + h.categoria + (typeof h.nivel === "number" ? " (" + h.nivel + "%)" : "");
+        const b = document.createElement("button"); b.type = "button"; b.textContent = "Eliminar";
+        b.addEventListener("click", () => { D.habilidades.splice(i, 1); pintarHabilidades(); avisar("Habilidad eliminada. Pulsa Guardar cambios."); });
+        f.append(s, b); c.append(f);
+      });
+    }
+    $("#agregar-hab").addEventListener("click", () => {
+      const n = $("#h-nombre").value.trim();
+      if (!n) { avisar("Escribe el nombre de la habilidad."); return; }
+      const nv = $("#h-nivel").value;
+      D.habilidades.push({ nombre: n, categoria: $("#h-cat").value, icono: "◆", nivel: nv === "" ? null : Math.max(0, Math.min(100, Number(nv))), descripcion: $("#h-desc").value.trim() });
+      $("#h-nombre").value = ""; $("#h-nivel").value = ""; $("#h-desc").value = "";
+      pintarHabilidades(); avisar("Habilidad agregada. Pulsa Guardar cambios.");
+    });
+
+    /* Servicios */
+    function pintarServicios() {
+      const c = $("#lista-serv"); c.replaceChildren();
+      D.servicios.forEach((s, i) => {
+        const f = document.createElement("div"); f.className = "fila";
+        const w = document.createElement("div"); w.className = "ancho"; w.append(entrada("textarea", s.detalle, (v) => s.detalle = v, "Qué incluye"));
+        const b = document.createElement("button"); b.type = "button"; b.textContent = "Eliminar servicio";
+        b.addEventListener("click", () => { D.servicios.splice(i, 1); pintarServicios(); avisar("Servicio eliminado. Pulsa Guardar cambios."); });
+        const acc = document.createElement("div"); acc.className = "acciones"; acc.append(b);
+        f.append(entrada("input", s.nombre, (v) => s.nombre = v, "Nombre del servicio"), entrada("input", s.tiempo, (v) => s.tiempo = v, "Tiempo (ej. 3 a 5 días)"), w, acc);
+        c.append(f);
+      });
+    }
+    $("#nuevo-serv").addEventListener("click", () => { D.servicios.push({ nombre: "Nuevo servicio", detalle: "", tiempo: "", icono: "◆" }); pintarServicios(); });
+
+    /* Certificados */
+    function pintarCertificados() {
+      const c = $("#lista-cert"); c.replaceChildren();
+      D.certificados.forEach((x, i) => {
+        const f = document.createElement("div"); f.className = "fila";
+        const img = document.createElement("img"); img.className = "prev-peq"; img.src = x.imagen || ""; img.alt = "";
+        const fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*";
+        fi.addEventListener("change", async () => { const g = fi.files[0]; if (!g) return; x.imagen = await leerImagen(g, 640); img.src = x.imagen; avisar("Imagen lista. Pulsa Guardar cambios."); });
+        const vis = document.createElement("label"); vis.style.cssText = "margin:0;display:flex;gap:.4rem;align-items:center;text-transform:none;letter-spacing:0";
+        const k = document.createElement("input"); k.type = "checkbox"; k.checked = x.visible !== false; k.addEventListener("change", () => { x.visible = k.checked; });
+        vis.append(k, document.createTextNode("Visible"));
+        const b = document.createElement("button"); b.type = "button"; b.textContent = "Eliminar";
+        b.addEventListener("click", () => { D.certificados.splice(i, 1); pintarCertificados(); avisar("Certificado eliminado. Pulsa Guardar cambios."); });
+        const w = document.createElement("div"); w.className = "ancho bloque-img"; w.append(img, fi);
+        const acc = document.createElement("div"); acc.className = "acciones"; acc.append(vis, b);
+        f.append(entrada("input", x.nombre, (v) => x.nombre = v, "Nombre del certificado"), entrada("input", x.emisor, (v) => x.emisor = v, "Emisor"), entrada("input", x.fecha, (v) => x.fecha = v, "Fecha"), entrada("input", x.enlace, (v) => x.enlace = v, "Enlace para verificar (opcional)"), w, acc);
+        c.append(f);
+      });
+    }
+    $("#nuevo-cert").addEventListener("click", () => { D.certificados.push({ nombre: "Nuevo certificado", emisor: "", fecha: "", imagen: "", enlace: "#", visible: true }); pintarCertificados(); });
+
+    /* Presupuesto y extras */
+    function pintarExtras() {
+      $("#x-opciones").value = D.presupuesto.opciones.join("\n");
+      $("#x-plazos").value = D.presupuesto.plazos.join("\n");
+      $("#x-wa").value = D.contacto.whatsapp || ""; $("#x-ig").value = D.contacto.instagram || "";
+      $("#x-disp").value = D.disponible === false ? "no" : "si";
+      $("#x-cli").value = D.clientes.valor; $("#x-cli-vis").checked = !!D.clientes.visible;
+    }
+    $("#x-opciones").addEventListener("input", (e) => D.presupuesto.opciones = e.target.value.split("\n").map((t) => t.trim()).filter(Boolean));
+    $("#x-plazos").addEventListener("input", (e) => D.presupuesto.plazos = e.target.value.split("\n").map((t) => t.trim()).filter(Boolean));
+    $("#x-wa").addEventListener("input", (e) => D.contacto.whatsapp = e.target.value.replace(/\D/g, ""));
+    $("#x-ig").addEventListener("input", (e) => D.contacto.instagram = e.target.value.trim());
+    $("#x-disp").addEventListener("change", (e) => D.disponible = e.target.value === "si");
+    $("#x-cli").addEventListener("input", (e) => D.clientes.valor = Math.max(0, Number(e.target.value) || 0));
+    $("#x-cli-vis").addEventListener("change", (e) => D.clientes.visible = e.target.checked);
+
+    /* Capítulo I */
+    function vincularLinea(id, fn) { $(id).addEventListener("input", (e) => fn(e.target.value)); }
+    vincularLinea("#k-num", (v) => D.capitulo.numero = v);
+    vincularLinea("#k-l1", (v) => D.capitulo.linea1 = v);
+    vincularLinea("#k-l2", (v) => D.capitulo.linea2 = v);
+    vincularLinea("#k-texto", (v) => D.capitulo.texto = v);
+    $("#k-fb").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      D.capitulo.fotoBase = await leerImagen(f, 640); $("#k-fb-prev").src = D.capitulo.fotoBase; avisar("Foto base lista. Pulsa Guardar cambios.");
+    });
+    $("#k-fv").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      D.capitulo.fotoVelo = await leerImagen(f, 640); $("#k-fv-prev").src = D.capitulo.fotoVelo; avisar("Foto de revelación lista. Pulsa Guardar cambios.");
+    });
+    function pintarCapitulo() {
+      const C = D.capitulo;
+      $("#k-num").value = C.numero; $("#k-l1").value = C.linea1; $("#k-l2").value = C.linea2; $("#k-texto").value = C.texto;
+      $("#k-fb-prev").src = C.fotoBase || ""; $("#k-fv-prev").src = C.fotoVelo || "";
+    }
+
+    /* Canal e invitación */
+    vincularLinea("#f-pie", (v) => D.pie = v);
+    vincularLinea("#f-ct", (v) => D.canal.titulo = v);
+    vincularLinea("#f-ctx", (v) => D.canal.texto = v);
+    ["correo", "whatsapp", "github", "linkedin", "instagram"].forEach((k) => {
+      $("#f-c-" + k).addEventListener("change", (e) => D.canal[k] = e.target.checked);
+    });
+    $("#f-ia").addEventListener("change", (e) => D.invitacion.activa = e.target.checked);
+    vincularLinea("#f-it", (v) => D.invitacion.titulo = v);
+    vincularLinea("#f-itx", (v) => D.invitacion.texto = v);
+    vincularLinea("#f-ib", (v) => D.invitacion.boton = v);
+    vincularLinea("#f-ie", (v) => D.invitacion.enlace = v.trim());
+    function pintarFinal() {
+      $("#f-pie").value = D.pie; $("#f-ct").value = D.canal.titulo; $("#f-ctx").value = D.canal.texto;
+      ["correo", "whatsapp", "github", "linkedin", "instagram"].forEach((k) => $("#f-c-" + k).checked = D.canal[k] !== false);
+      $("#f-ia").checked = D.invitacion.activa !== false;
+      $("#f-it").value = D.invitacion.titulo; $("#f-itx").value = D.invitacion.texto;
+      $("#f-ib").value = D.invitacion.boton; $("#f-ie").value = D.invitacion.enlace;
+    }
+
+    /* Pintar y guardar */
+    function pintarTodo() {
+      $("#i-nombre").value = D.identidad.nombre; $("#i-condicion").value = D.identidad.condicion;
+      $("#i-esp").value = D.identidad.especialidad; $("#i-num").value = D.identidad.numero; $("#i-desc").value = D.identidad.descripcion;
+      $("#i-foto-prev").src = D.identidad.foto || "";
+      $("#aud-prev").src = D.audioUrl || "";
+      $("#i-ciudad").value = D.identidad.ciudad || ""; $("#i-edad").value = D.identidad.edad || "";
+      $("#i-est").value = D.identidad.estudiante ? "si" : "no"; $("#i-inst").value = D.identidad.institucion || "";
+      $("#i-datos").value = (D.identidad.datos || []).join("\n");
+      $("#s-perfil").value = D.sobreMi.perfil; $("#s-form").value = D.sobreMi.formacion;
+      $("#s-desc").value = D.sobreMi.descripcion; $("#s-obj").value = D.sobreMi.objetivos;
+      $("#c-correo").value = D.contacto.correo; $("#c-github").value = D.contacto.github;
+      $("#c-linkedin").value = D.contacto.linkedin; $("#c-instagram").value = D.contacto.instagram;
+      pintarProyectos(); pintarHabilidades(); pintarServicios(); pintarCertificados(); pintarExtras(); pintarCapitulo(); pintarFinal();
+    }
+    $("#guardar").addEventListener("click", async () => {
+      if (!SB) { avisar("No hay conexión con el servidor."); return; }
+      avisar("Guardando...");
+      const { error } = await SB.from(BP_SUPABASE.tabla).upsert({ id: BP_SUPABASE.fila, contenido: D, actualizado: new Date().toISOString() });
+      if (error) { avisar("No se pudo guardar: " + error.message); return; }
+      try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {}
+      try { if (window.parent && window.parent.bpRecargarContenido) window.parent.bpRecargarContenido(JSON.parse(JSON.stringify(D))); } catch (e) {}
+      avisar("Guardado. Los cambios ya se ven para todos.");
+    });
+    $("#restaurar").addEventListener("click", () => {
+      if (!confirm("¿Restaurar el contenido original? Se borrarán los cambios guardados.")) return;
+      localStorage.removeItem(KEY);
+      if (window.parent && window.parent.location) window.parent.location.reload();
+    });
+  </script>
+</body>
+</html>
