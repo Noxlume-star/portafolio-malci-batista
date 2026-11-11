@@ -1,3 +1,4 @@
+
 /* ===== BATMAN PORTFOLIO — lógica ===== */
 (function () {
   "use strict";
@@ -21,7 +22,7 @@
     return i;
   }
 
-  /* 1. Sonido: opcional, apagado por defecto, solo se activa con clic */
+  /* 1. Sonido */
   const SONIDOS = { entrada: "assets/sounds/entrada.mp3", carnet: "assets/sounds/carnet.mp3", cortina: "assets/sounds/cortina.mp3", click: "assets/sounds/click.mp3" };
   let sonidoOn = false;
   let audioUsuario = null;
@@ -31,6 +32,7 @@
   }
   function iniciarSonido() {
     const b = $("#btn-sonido");
+    if (!b) return;
     b.addEventListener("click", () => {
       sonidoOn = !sonidoOn;
       b.textContent = sonidoOn ? T("sonido_on") : T("sonido_off");
@@ -40,7 +42,7 @@
     });
   }
 
-  /* 2. Contenido: se llena desde datos.js */
+  /* 2. Contenido */
   function renderCarnet() {
     const I = D.identidad;
     $("#carnet-foto").replaceChildren(imagen(I.foto, "Fotografía del carnet"));
@@ -59,9 +61,7 @@
   function renderSobreMi() {
     const S = D.sobreMi;
     const bloques = [["Perfil profesional", S.perfil], ["Formación", S.formacion], ["Especialidad", D.identidad.especialidad], ["Descripción personal", S.descripcion], ["Objetivos profesionales", S.objetivos]];
-    $("#sobre-contenido").replaceChildren(
-      el("div", "sobre__texto", null)
-    );
+    $("#sobre-contenido").replaceChildren(el("div", "sobre__texto", null));
     const texto = $("#sobre-contenido .sobre__texto");
     texto.append(el("h2", "titulo-seccion", S.titulo));
     bloques.forEach(([t, x]) => { const b = el("div", "bloque"); b.append(el("h3", null, t), el("p", null, x)); texto.append(b); });
@@ -113,7 +113,7 @@
     wlink.href = wa ? "https://wa.me/" + wa : "#";
   }
 
-  /* 3. Carnet: se inclina, se arrastra, y al soltarlo da un salto y oscila hasta quedar quieto */
+  /* 3. Carnet */
   function iniciarCarnet() {
     const zona = $("#carnet-zona"), carnet = $("#carnet");
     if (!zona || !carnet) return;
@@ -177,7 +177,7 @@
     carnet.addEventListener("pointercancel", soltar);
   }
 
-  /* 4. Máscara: sigue el cursor o el dedo con suavidad */
+  /* 4. Máscara */
   function iniciarMascara() {
     const visor = $("#visor");
     if (!visor) return;
@@ -257,11 +257,12 @@
     cierre = setTimeout(() => { cortinas.hidden = true; document.body.style.overflow = ""; }, reduce ? 0 : 1200);
   }
   function iniciarCortinas() {
-    $("#cerrar-detalle").addEventListener("click", cerrarProyecto);
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !cortinas.hidden) cerrarProyecto(); });
+    const cerrar = $("#cerrar-detalle");
+    if (cerrar) cerrar.addEventListener("click", cerrarProyecto);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && cortinas && !cortinas.hidden) cerrarProyecto(); });
   }
 
-  /* 6. Animaciones de scroll: aparición y parallax */
+  /* 6. Animaciones de scroll */
   function iniciarScroll() {
     const obs = new IntersectionObserver((entradas) => {
       entradas.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("visible"); obs.unobserve(en.target); } });
@@ -281,7 +282,7 @@
   /* 7. Partículas */
   function crearParticulas() {
     const cont = $("#particulas");
-    if (reduce) return;
+    if (!cont || reduce) return;
     for (let i = 0; i < 28; i++) {
       const p = el("span", "particula");
       p.style.left = Math.random() * 100 + "%";
@@ -293,12 +294,13 @@
     }
   }
 
-  /* 8. Mensajes que se escriben al llegar al cierre */
+  /* 8. Mensajes que se escriben */
   function iniciarMensajes() {
     const nodos = $$(".mensaje[data-typing]");
     if (!nodos.length) return;
     if (reduce || !("IntersectionObserver" in window)) { nodos.forEach((n) => (n.textContent = n.dataset.typing)); return; }
     function escribir(n, alTerminar) {
+      if (!n) return;
       const texto = n.dataset.typing;
       let i = 0;
       n.classList.add("cursor");
@@ -319,7 +321,8 @@
         escribir(nodos[0], () => setTimeout(() => escribir(nodos[1]), 600));
       });
     }, { threshold: 0.6 });
-    obs.observe($("#cierre"));
+    const cierreEl = $("#cierre");
+    if (cierreEl) obs.observe(cierreEl);
   }
 
   /* 12. Servicios, certificaciones, presupuesto y contador */
@@ -393,7 +396,7 @@
     obs.observe(z);
   }
 
-  /* Textos y fotos editables de capítulo, pie, canal e invitación */
+  /* Textos y fotos editables */
   function renderTextos() {
     const C = D.capitulo || {};
     $("#cap-num").textContent = C.numero || "";
@@ -420,8 +423,9 @@
     ib.textContent = I.boton || ""; ib.href = I.enlace || "#";
   }
 
-  /* Recargar todo el contenido (lo usa el panel al guardar) */
+  /* Recargar todo el contenido */
   function recargarTodo(nuevo) {
+    if (!nuevo) return;
     D = nuevo; window.PORTAFOLIO = nuevo;
     $("#habilidades-contenido").replaceChildren();
     $("#proyectos-galeria").replaceChildren();
@@ -433,7 +437,37 @@
   }
   window.bpRecargarContenido = recargarTodo;
 
-  /* 9. Revelación del retrato: GSAP y Lenis (si cargan); si no, la página funciona igual */
+  /* Cargar contenido público desde Supabase */
+  (async function cargarPortafolioPublico() {
+    try {
+      if (!window.supabase || !window.BP_SUPABASE) {
+        console.error("Supabase no está configurado.");
+        return;
+      }
+
+      const SB_PUBLICO = window.supabase.createClient(
+        window.BP_SUPABASE.url,
+        window.BP_SUPABASE.key
+      );
+
+      const { data, error } = await SB_PUBLICO
+        .from(window.BP_SUPABASE.tabla)
+        .select("contenido")
+        .eq("id", window.BP_SUPABASE.fila)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data && data.contenido) {
+        window.bpRecargarContenido(data.contenido);
+        console.log("Portafolio cargado correctamente desde Supabase.");
+      }
+    } catch (error) {
+      console.error("No se pudo cargar el portafolio desde Supabase:", error);
+    }
+  })();
+
+  /* 9. Revelación del retrato */
   function iniciarRevelacion() {
     const retrato = $("#retrato");
     if (!retrato) return;
@@ -467,10 +501,11 @@
     const obs = new IntersectionObserver((en) => {
       if (en.some((e) => e.isIntersecting)) { obs.disconnect(); animar(); }
     }, { threshold: 0.3 });
-    obs.observe($("#revelacion"));
+    const revelacion = $("#revelacion");
+    if (revelacion) obs.observe(revelacion);
   }
 
-  /* 10. Desplazamiento suave con Lenis (si carga y no hay movimiento reducido) */
+  /* 10. Desplazamiento suave con Lenis */
   function iniciarSuave() {
     if (reduce || !window.Lenis) return;
     const lenis = new window.Lenis({ lerp: 0.12, smoothWheel: true });
@@ -478,7 +513,7 @@
     requestAnimationFrame(bucle);
   }
 
-  /* 11. Audio del portafolio: guarda la pista de sonido (de audio o de video) en IndexedDB */
+  /* 11. Audio del portafolio */
   function abrirDB() {
     return new Promise((res, rej) => {
       const r = indexedDB.open("bp-media", 1);
@@ -511,7 +546,7 @@
     borrar: () => transaccion("readwrite", (s) => s.delete("audio")).then(cargarAudio),
   };
 
-  /* 13. Idioma: español / inglés (textos fijos y botones) */
+  /* 13. Idioma */
   let idioma = (function () { try { return localStorage.getItem("bp-idioma") || "es"; } catch (e) { return "es"; } })();
   const I18N = {
     es: { nav_serv: "Servicios", nav_pres: "Presupuesto", nav_proy: "Proyectos", nav_hab: "Habilidades", nav_sobre: "Sobre mí", nav_cont: "Contacto",
